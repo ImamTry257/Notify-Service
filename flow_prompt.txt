@@ -1,0 +1,25 @@
+tolong buatkan issue.md berisi planning untuk membuat ini 
+
+Tolong buatkan project notify service di folder ini
+
+service ini akan digunakan untuk mengirimkan notifikasi ke email user
+
+service ini dapat diakses melalu grpc
+
+menggunakan 
+- go lang ada handler grpc sebagai server, repository , usecase, entity, dto, config, middleware 
+- import proto lms-proto-notify di git@github.com:ImamTry257/lms-proto-notify.git, 
+- mysql
+- manfaatkan NATS Jetstream juga untuk mengirimkan setidaknya data yang akan diproses dengan 
+  a. nama stream : notify
+  b. nama subject : notify.email
+
+- dockerize
+
+- ci/cd ke github
+
+Jangan terlalu low level atau detail
+
+Cukup Instruksi high level
+
+Nanti document planning nya akan digunakan oleh Programmer atau model yang murah untuk diimplementasikan
