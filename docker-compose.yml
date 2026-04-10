@@ -1,0 +1,52 @@
+services:
+  notify-service:
+    build: .
+    ports:
+      - "50057:50057"
+    environment:
+      - APP_NAME=notify-service
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DBNAME=notify_db
+      - NATS_URL=nats://nats:4222
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - SMTP_SENDER_NAME=NotifyService
+      - SMTP_SENDER_EMAIL=no-reply@notifyservice.com
+    depends_on:
+      - mysql
+      - nats
+      - mailhog
+
+  mysql:
+    image: mysql:8.0
+    # ... (rest same)
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=notify_db
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # You should add an init script here to create the table
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  nats:
+    image: nats:2.10-alpine
+    command: ["-js"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Web UI port
+
+volumes:
+  mysql_data:
