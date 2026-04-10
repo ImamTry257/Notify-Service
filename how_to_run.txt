@@ -1,0 +1,16 @@
+docker run -d `
+  --name notify-service-app `
+  -p 50057:50057 `
+  -e APP_NAME=notify-service `
+  -e GRPC_PORT=50057 `
+  -e MYSQL_USER=user `
+  -e MYSQL_PASSWORD=password `
+  -e MYSQL_HOST=host.docker.internal `
+  -e MYSQL_PORT=3306 `
+  -e MYSQL_DBNAME=notify_db `
+  -e NATS_URL=nats://host.docker.internal:4222 `
+  -e SMTP_HOST=host.docker.internal `
+  -e SMTP_PORT=1025 `
+  -e SMTP_SENDER_NAME="Notify Service" `
+  -e SMTP_SENDER_EMAIL="no-reply@notifyservice.com" `
+  notify-service

@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/ImamTry257/Notify-Service/config"
-	"github.com/ImamTry257/Notify-Service/gen/go/notify/notify"
+	notifypbv2 "github.com/ImamTry257/Notify-Service/gen/go/notify/notify"
 	handler "github.com/ImamTry257/Notify-Service/internal/handler/grpc"
 	"github.com/ImamTry257/Notify-Service/internal/repository"
 	"github.com/ImamTry257/Notify-Service/internal/usecase"
@@ -70,7 +70,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	notify.RegisterNotifyServiceServer(grpcServer, h)
+	notifypbv2.RegisterNotifyServiceServer(grpcServer, h)
 	reflection.Register(grpcServer)
 
 	go func() {
