@@ -8,12 +8,11 @@ import (
 	"fmt"
 	"html/template"
 	"log"
-	"time"
 
-	"github.com/nats-io/nats.go"
 	"github.com/ImamTry257/Notify-Service/internal/entity"
 	"github.com/ImamTry257/Notify-Service/internal/repository"
 	"github.com/ImamTry257/Notify-Service/pkg/email"
+	"github.com/nats-io/nats.go"
 )
 
 //go:embed templates/*.html
@@ -88,7 +87,7 @@ func (w *NATSWorker) processMessage(ctx context.Context, msg *nats.Msg) {
 
 	// Send HTML email
 	err := w.sendRealEmail(&history)
-	
+
 	status := "SENT"
 	if err != nil {
 		log.Printf("Failed to send email: %v", err)

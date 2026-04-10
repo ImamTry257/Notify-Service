@@ -2,15 +2,16 @@ package grpc
 
 import (
 	"context"
+	"time"
 
-	"github.com/ImamTry257/lms-proto-notify/gen/go/notify"
+	notifypbv2 "github.com/ImamTry257/Notify-Service/gen/go/notify/notify"
 	"github.com/ImamTry257/Notify-Service/internal/entity"
 	"github.com/ImamTry257/Notify-Service/internal/usecase"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type NotifyHandler struct {
-	notify.UnimplementedNotifyServiceServer
+	notifypbv2.UnimplementedNotifyServiceServer
 	usecase usecase.NotifyUsecase
 }
 
@@ -20,7 +21,7 @@ func NewNotifyHandler(usecase usecase.NotifyUsecase) *NotifyHandler {
 	}
 }
 
-func (h *NotifyHandler) Send(ctx context.Context, req *notify.NotifyRequest) (*notify.NotifyResponse, error) {
+func (h *NotifyHandler) Send(ctx context.Context, req *notifypbv2.NotifyRequest) (*notifypbv2.NotifyResponse, error) {
 	// Map proto request to entity
 	history := &entity.EmailHistory{
 		Email:          req.Email,
@@ -44,7 +45,7 @@ func (h *NotifyHandler) Send(ctx context.Context, req *notify.NotifyRequest) (*n
 	}
 
 	// Map back to response
-	return &notify.NotifyResponse{
+	return &notifypbv2.NotifyResponse{
 		Uuid:           history.IDStr(), // Assuming we want a string version of ID or a real UUID
 		Email:          history.Email,
 		Phone:          history.Phone,
