@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	notifypbv2 "github.com/ImamTry257/Notify-Service/gen/go/notify/notify"
 	"github.com/ImamTry257/Notify-Service/internal/entity"
 	"github.com/ImamTry257/Notify-Service/internal/usecase"
+	notifypbv2 "github.com/ImamTry257/lms-proto-notify/gen/go/notify"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

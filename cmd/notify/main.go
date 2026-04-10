@@ -13,13 +13,13 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/ImamTry257/Notify-Service/config"
-	notifypbv2 "github.com/ImamTry257/Notify-Service/gen/go/notify/notify"
 	handler "github.com/ImamTry257/Notify-Service/internal/handler/grpc"
 	"github.com/ImamTry257/Notify-Service/internal/repository"
 	"github.com/ImamTry257/Notify-Service/internal/usecase"
 	"github.com/ImamTry257/Notify-Service/pkg/email"
 	"github.com/ImamTry257/Notify-Service/pkg/mysql"
 	"github.com/ImamTry257/Notify-Service/pkg/nats"
+	notifypbv2 "github.com/ImamTry257/lms-proto-notify/gen/go/notify"
 )
 
 func main() {

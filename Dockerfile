@@ -29,6 +29,6 @@ WORKDIR /root/
 COPY --from=builder /app/notify-service .
 COPY --from=builder /app/config.yaml.example ./config.yaml
 
-EXPOSE 50051
+EXPOSE 50056
 
 CMD ["./notify-service"]
