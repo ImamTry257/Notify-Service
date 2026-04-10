@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package notify.v2;
+
+option go_package = "github.com/ImamTry257/Notify-Service/gen/go/notify;notifypbv2";
+
+import "google/protobuf/timestamp.proto";
+
+message NotifyRequest {
+    string uuid = 1;
+    string email = 2;
+    string phone = 3;
+    string type = 4;
+    string data = 5;
+    string additional_data = 6;
+    string status = 7;
+    google.protobuf.Timestamp sent_at = 8;
+    google.protobuf.Timestamp created_at = 9;
+    string metadata = 10;
+    google.protobuf.Timestamp updated_at = 11;
+}
+
+message NotifyResponse {
+    string uuid = 1;
+    string email = 2;
+    string phone = 3;
+    string type = 4;
+    string data = 5;
+    string additional_data = 6;
+    string status = 7;
+    google.protobuf.Timestamp sent_at = 8;
+    google.protobuf.Timestamp created_at = 9;
+    string metadata = 10;
+    google.protobuf.Timestamp updated_at = 11;
+}
+
+service NotifyService {
+    rpc Send(NotifyRequest) returns (NotifyResponse);
+}

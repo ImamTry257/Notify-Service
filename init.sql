@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS email_histories (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    type VARCHAR(100) NOT NULL,
+    data TEXT,
+    additional_data TEXT,
+    status VARCHAR(50) NOT NULL,
+    metadata JSON,
+    sent_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

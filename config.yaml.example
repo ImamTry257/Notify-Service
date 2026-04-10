@@ -1,0 +1,26 @@
+app:
+  name: "notify-service"
+  env: "development"
+
+mysql:
+  user: "user"
+  password: "password"
+  host: "localhost"
+  port: 3306
+  dbname: "notify_db"
+
+nats:
+  url: "nats://localhost:4222"
+  streamname: "notify"
+  subject: "notify.email"
+
+smtp:
+  host: "localhost"
+  port: 1025
+  username: ""
+  password: ""
+  sendername: "Notify Service"
+  senderemail: "no-reply@notifyservice.com"
+
+grpc:
+  port: 50051
