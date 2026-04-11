@@ -2,15 +2,19 @@ name: Notify Service CI/CD
 
 on:
   push:
-    branches: [ main, development ]
-  pull_request:
-    branches: [ main, development ]
+    branches: [ main, staging ]
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout source
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -20,8 +24,69 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
-      - name: Build
-        run: go build -v ./cmd/notify/main.go
+      - name: Build binary
+        run: go build -v -o notify ./cmd/notify/main.go
 
-      - name: Test
+      - name: Run tests
         run: go test -v ./...
+
+      # ✅ Login ke GHCR
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      # ✅ Build image
+      - name: Build Docker image
+        run: |
+          docker build -t ghcr.io/${{ github.repository }}/notify-service:latest .
+
+      # ✅ Push image
+      - name: Push Docker image
+        run: |
+          docker push ghcr.io/${{ github.repository }}/notify-service:latest
+
+      # ✅ Setup SSH
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      # ✅ Deploy
+      - name: Deploy to Server
+        run: |
+          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            docker pull ghcr.io/${{ github.repository }}/notify-service:latest
+
+            docker stop notify-service || true
+            docker rm notify-service || true
+
+            docker run -d \
+              --name notify-service \
+              --network db_network \
+              -p 8080:8080 \
+              -p 50056:50056 \
+              --restart always \
+              -e APP_NAME="${{ vars.APP_NAME }}" \
+              -e APP_ENV="${{ vars.APP_ENV }}" \
+              -e MYSQL_USER="${{ vars.MYSQL_USER }}" \
+              -e MYSQL_PASSWORD="${{ secrets.MYSQL_PASSWORD }}" \
+              -e MYSQL_HOST="${{ vars.MYSQL_HOST }}" \
+              -e MYSQL_PORT="${{ vars.MYSQL_PORT }}" \
+              -e MYSQL_DBNAME="${{ vars.MYSQL_DBNAME }}" \
+              -e NATS_URL="${{ vars.NATS_URL }}" \
+              -e NATS_STREAM="${{ vars.NATS_STREAM }}" \
+              -e NATS_SUBJECT="${{ vars.NATS_SUBJECT }}" \
+              -e SMTP_HOST="${{ vars.SMTP_HOST }}" \
+              -e SMTP_PORT="${{ vars.SMTP_PORT }}" \
+              -e SMTP_USERNAME="${{ vars.SMTP_USERNAME }}" \
+              -e SMTP_PASSWORD="${{ secrets.SMTP_PASSWORD }}" \
+              -e SMTP_SENDER_NAME="${{ vars.SMTP_SENDER_NAME }}" \
+              -e SMTP_SENDER_EMAIL="${{ vars.SMTP_SENDER_EMAIL }}" \
+              -e GRPC_PORT="${{ vars.GRPC_PORT }}" \
+              ghcr.io/${{ github.repository }}/notify-service:latest
+
+          EOF
