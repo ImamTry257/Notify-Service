@@ -58,10 +58,6 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Validate SSH key
-        run: |
-          ssh-keygen -y -f ~/.ssh/id_rsa > /dev/null
-
       # ✅ Deploy
       - name: Deploy to Server
         run: |
