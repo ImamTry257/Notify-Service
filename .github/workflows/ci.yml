@@ -30,6 +30,11 @@ jobs:
       - name: Run tests
         run: go test -v ./...
 
+      # ✅ Set lowercase image name
+      - name: Set image name
+        run: |
+          echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}:latest" >> $GITHUB_ENV
+
       # ✅ Login ke GHCR
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -37,12 +42,12 @@ jobs:
       # ✅ Build image
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/${{ github.repository }}/notify-service:latest .
+          docker build -t $IMAGE_NAME .
 
       # ✅ Push image
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ github.repository }}/notify-service:latest
+          docker push $IMAGE_NAME
 
       # ✅ Setup SSH
       - name: Setup SSH
@@ -59,7 +64,7 @@ jobs:
 
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            docker pull ghcr.io/${{ github.repository }}/notify-service:latest
+            docker pull $IMAGE_NAME
 
             docker stop notify-service || true
             docker rm notify-service || true
@@ -87,6 +92,6 @@ jobs:
               -e SMTP_SENDER_NAME="${{ vars.SMTP_SENDER_NAME }}" \
               -e SMTP_SENDER_EMAIL="${{ vars.SMTP_SENDER_EMAIL }}" \
               -e GRPC_PORT="${{ vars.GRPC_PORT }}" \
-              ghcr.io/${{ github.repository }}/notify-service:latest
+              $IMAGE_NAME
 
           EOF
