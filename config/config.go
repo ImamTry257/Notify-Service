@@ -7,11 +7,11 @@ import (
 )
 
 type Config struct {
-	App         AppConfig
-	MySQL       MySQLConfig
-	NATS        NATSConfig
-	GRPC        GRPCConfig
-	SMTP        SMTPConfig
+	App   AppConfig
+	MySQL MySQLConfig
+	NATS  NATSConfig
+	GRPC  GRPCConfig
+	SMTP  SMTPConfig
 }
 
 type AppConfig struct {
@@ -73,7 +73,7 @@ func LoadConfig() (*Config, error) {
 
 func setDefaults(cfg *Config) {
 	if cfg.GRPC.Port == 0 {
-		cfg.GRPC.Port = 50051
+		cfg.GRPC.Port = 50056
 	}
 	if cfg.NATS.StreamName == "" {
 		cfg.NATS.StreamName = "notify"

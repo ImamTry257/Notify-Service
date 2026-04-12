@@ -7,12 +7,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"log"
 
 	"github.com/ImamTry257/Notify-Service/internal/entity"
 	"github.com/ImamTry257/Notify-Service/internal/repository"
 	"github.com/ImamTry257/Notify-Service/pkg/email"
+	"github.com/ImamTry257/Notify-Service/pkg/logger"
 	"github.com/nats-io/nats.go"
+)
+
+const (
+	flowNATSWorkerStart   = "NATSWorker.Start"
+	flowNATSWorkerProcess = "NATSWorker.ProcessMessage"
+	flowNATSWorkerEmail   = "NATSWorker.SendEmail"
 )
 
 //go:embed templates/*.html
@@ -48,7 +54,7 @@ func (w *NATSWorker) Start(ctx context.Context) error {
 		return err
 	}
 
-	log.Printf("Worker started, listening on subject: %s", w.subject)
+	logger.Info(flowNATSWorkerStart, "worker started", "subject", w.subject)
 
 	go func() {
 		for {
@@ -61,7 +67,7 @@ func (w *NATSWorker) Start(ctx context.Context) error {
 					if err == context.DeadlineExceeded || err == nats.ErrTimeout {
 						continue
 					}
-					log.Printf("Fetch error: %v", err)
+					logger.Error(flowNATSWorkerStart, "fetching messages", err, "subject", w.subject)
 					continue
 				}
 
@@ -78,25 +84,36 @@ func (w *NATSWorker) Start(ctx context.Context) error {
 func (w *NATSWorker) processMessage(ctx context.Context, msg *nats.Msg) {
 	var history entity.EmailHistory
 	if err := json.Unmarshal(msg.Data, &history); err != nil {
-		log.Printf("Unmarshal error: %v", err)
+		logger.Error(flowNATSWorkerProcess, "unmarshaling message", err)
 		msg.Term()
 		return
 	}
 
-	log.Printf("Processing notification for ID: %d, Email: %s, Type: %s", history.ID, history.Email, history.Type)
+	logger.Request(flowNATSWorkerProcess, history)
 
 	// Send HTML email
 	err := w.sendRealEmail(&history)
 
 	status := "SENT"
 	if err != nil {
-		log.Printf("Failed to send email: %v", err)
+		logger.Error(flowNATSWorkerProcess, "sending email", err,
+			"id", history.ID,
+			"email", history.Email,
+			"type", history.Type,
+		)
 		status = "FAILED"
+	} else {
+		logger.Response(flowNATSWorkerProcess, map[string]any{
+			"id": history.ID, "email": history.Email, "type": history.Type, "status": status,
+		})
 	}
 
 	// Update record in MySQL
 	if err := w.repo.UpdateStatus(ctx, history.ID, status); err != nil {
-		log.Printf("Failed to update status in DB: %v", err)
+		logger.Error(flowNATSWorkerProcess, "updating status in DB", err,
+			"id", history.ID,
+			"status", status,
+		)
 	}
 
 	msg.Ack()

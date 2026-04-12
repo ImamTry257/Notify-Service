@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS email_histories (
     data TEXT,
     additional_data TEXT,
     status VARCHAR(50) NOT NULL,
-    metadata JSON,
+    metadata TEXT,
     sent_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
