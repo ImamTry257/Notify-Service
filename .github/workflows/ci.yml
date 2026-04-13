@@ -68,8 +68,8 @@ jobs:
 
             docker pull $IMAGE_NAME
 
-            docker stop notify-service || true
-            docker rm notify-service || true
+            # docker stop notify-service || true
+            # docker rm notify-service || true
 
             docker run -d \
               --name notify-service \
