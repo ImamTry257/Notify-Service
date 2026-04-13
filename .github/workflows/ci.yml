@@ -85,7 +85,7 @@ jobs:
               -e MYSQL_PORT="${{ vars.MYSQL_PORT }}" \
               -e MYSQL_DBNAME="${{ vars.MYSQL_DBNAME }}" \
               -e NATS_URL="${{ vars.NATS_URL }}" \
-              -e NATS_STREAM="${{ vars.NATS_STREAM }}" \
+              -e NATS_STREAM_NAME="${{ vars.NATS_STREAM }}" \
               -e NATS_SUBJECT="${{ vars.NATS_SUBJECT }}" \
               -e SMTP_HOST="${{ vars.SMTP_HOST }}" \
               -e SMTP_PORT="${{ vars.SMTP_PORT }}" \
