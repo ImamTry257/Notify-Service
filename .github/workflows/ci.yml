@@ -73,7 +73,7 @@ jobs:
 
             docker run -d \
               --name notify-service \
-              --network db_network \
+              --network dbnetwork \
               -p 8080:8080 \
               -p 50056:50056 \
               --restart always \
