@@ -1,16 +1,52 @@
-docker run -d `
-  --name notify-service-app `
-  -p 50057:50057 `
-  -e APP_NAME=notify-service `
-  -e GRPC_PORT=50057 `
-  -e MYSQL_USER=user `
-  -e MYSQL_PASSWORD=password `
-  -e MYSQL_HOST=host.docker.internal `
-  -e MYSQL_PORT=3306 `
-  -e MYSQL_DBNAME=notify_db `
-  -e NATS_URL=nats://host.docker.internal:4222 `
-  -e SMTP_HOST=host.docker.internal `
-  -e SMTP_PORT=1025 `
-  -e SMTP_SENDER_NAME="Notify Service" `
-  -e SMTP_SENDER_EMAIL="no-reply@notifyservice.com" `
-  notify-service
+docker build -t notify-service:1.0.0 .
+
+docker run -d \
+  --name notify-service-app \
+  --restart always \
+  -p 50056:50056 \
+  -e APP_NAME=notify-service \
+  -e GRPC_PORT=50056 \
+  -e MYSQL_USER=root \
+  -e MYSQL_PASSWORD= \
+  -e MYSQL_HOST=host.docker.internal \
+  -e MYSQL_PORT=3306 \
+  -e MYSQL_DBNAME=db_notify_service \
+  -e NATS_URL=nats://host.docker.internal:4222 \
+  -e NATS_STREAM=Notify \
+  -e NATS_SUBJECT=notify.email \
+  -e SMTP_HOST=smtp.gmail.com \
+  -e SMTP_PORT=587 \
+  -e SMTP_USERNAME="dev@gmail.com" \
+  -e SMTP_PASSWORD="****" \
+  -e SMTP_SENDER_NAME="Notify Service" \
+  -e SMTP_SENDER_EMAIL="admin@yopmail.com" \
+  notify-service:1.0.0
+
+
+  -- rebuild
+docker stop notify-service-app && \
+docker rm notify-service-app && \
+docker rmi notify-service:1.0.0 && \
+docker build -t notify-service:1.0.0 . && \
+docker run -d \
+  --name notify-service-app \
+  --restart always \
+  -p 50056:50056 \
+  -e APP_NAME=notify-service \
+  -e GRPC_PORT=50056 \
+  -e MYSQL_USER=root \
+  -e MYSQL_PASSWORD= \
+  -e MYSQL_HOST=host.docker.internal \
+  -e MYSQL_PORT=3306 \
+  -e MYSQL_DBNAME=db_notify_service \
+  -e NATS_URL=nats://host.docker.internal:4222 \
+  -e NATS_STREAM=Notify \
+  -e NATS_SUBJECT=notify.email \
+  -e SMTP_HOST=smtp.gmail.com \
+  -e SMTP_PORT=587 \
+  -e SMTP_USERNAME="dev@gmail.com" \
+  -e SMTP_PASSWORD="****" \
+  -e SMTP_SENDER_NAME="Notify Service" \
+  -e SMTP_SENDER_EMAIL="admin@yopmail.com" \
+  notify-service:1.0.0
+
