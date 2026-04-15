@@ -23,4 +23,4 @@ smtp:
   senderemail: "no-reply@notifyservice.com"
 
 grpc:
-  port: 50051
+  port: 50056
