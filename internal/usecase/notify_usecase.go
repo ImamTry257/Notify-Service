@@ -1,8 +1,10 @@
+```go
 package usecase
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -15,7 +17,15 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const flowSendNotification = "SendNotification"
+const (
+	flowSendNotification = "SendNotification"
+	statusPending        = "PENDING"
+)
+
+var (
+	ErrNilNotifyRequest = errors.New("notify request is nil")
+	ErrEmptySubject     = errors.New("nats subject is empty")
+)
 
 type NotifyUsecase interface {
 	SendNotification(ctx context.Context, req *notifypbv2.NotifyRequest) (*notifypbv2.NotifyResponse, error)
@@ -36,7 +46,16 @@ func NewNotifyUsecase(repo repository.NotifyRepository, js nats.JetStreamContext
 }
 
 func (u *notifyUsecase) SendNotification(ctx context.Context, req *notifypbv2.NotifyRequest) (*notifypbv2.NotifyResponse, error) {
-	// 1. Validate request
+	if req == nil {
+		logger.Error(flowSendNotification, "request is nil", ErrNilNotifyRequest)
+		return nil, ErrNilNotifyRequest
+	}
+
+	if u.subject == "" {
+		logger.Error(flowSendNotification, "nats subject is empty", ErrEmptySubject)
+		return nil, ErrEmptySubject
+	}
+
 	if err := validator.ValidateNotifyRequest(req); err != nil {
 		logger.Error(flowSendNotification, "request validation failed", err,
 			"email", req.Email,
@@ -45,49 +64,27 @@ func (u *notifyUsecase) SendNotification(ctx context.Context, req *notifypbv2.No
 		return nil, err
 	}
 
-	// 2. Log incoming request
 	logger.Request(flowSendNotification, req)
 
-	// 3. Convert proto request to entity
 	history := toEmailHistoryEntity(req)
+	now := time.Now().UTC()
+	history.Status = statusPending
+	history.CreatedAt = now
+	history.UpdatedAt = now
 
-	// 4. Set initial status
-	history.Status = "PENDING"
-	history.CreatedAt = time.Now()
-
-	// 5. Save to Repository
 	if err := u.repo.SaveEmailHistory(ctx, history); err != nil {
-		logger.Error(flowSendNotification, "saving to repository", err,
+		logger.Error(flowSendNotification, "saving to repository failed", err,
 			"email", history.Email,
 			"type", history.Type,
 		)
-		return nil, fmt.Errorf("failed to save email history: %w", err)
+		return nil, fmt.Errorf("save email history: %w", err)
 	}
-	logger.Info(flowSendNotification, "saved to repository successfully",
-		"email", history.Email,
-		"type", history.Type,
-		"status", history.Status,
-	)
 
-	// 6. Marshal and publish to NATS JetStream
-	data, err := json.Marshal(history)
+	pubAck, err := u.publishHistory(ctx, history)
 	if err != nil {
-		logger.Error(flowSendNotification, "marshaling data for NATS", err,
-			"email", history.Email,
-		)
-		return nil, fmt.Errorf("failed to marshal history: %w", err)
+		return nil, err
 	}
 
-	pubAck, err := u.js.Publish(u.subject, data)
-	if err != nil {
-		logger.Error(flowSendNotification, "publishing to NATS", err,
-			"subject", u.subject,
-			"email", history.Email,
-		)
-		return nil, fmt.Errorf("failed to publish to NATS: %w", err)
-	}
-
-	// 7. Build and return response
 	resp := toNotifyResponse(history)
 
 	logger.Response(flowSendNotification, map[string]any{
@@ -96,12 +93,50 @@ func (u *notifyUsecase) SendNotification(ctx context.Context, req *notifypbv2.No
 		"subject":  u.subject,
 		"email":    history.Email,
 		"type":     history.Type,
+		"status":   history.Status,
 	})
 
 	return resp, nil
 }
 
-// toEmailHistoryEntity converts a proto NotifyRequest to an entity.EmailHistory.
+func (u *notifyUsecase) publishHistory(ctx context.Context, history *entity.EmailHistory) (*nats.PubAck, error) {
+	payload, err := json.Marshal(history)
+	if err != nil {
+		logger.Error(flowSendNotification, "marshal history failed", err,
+			"email", history.Email,
+			"type", history.Type,
+		)
+		return nil, fmt.Errorf("marshal history: %w", err)
+	}
+
+	msg := &nats.Msg{
+		Subject: u.subject,
+		Data:    payload,
+	}
+
+	pubAck, err := u.js.PublishMsg(msg, nats.Context(ctx))
+	if err != nil {
+		logger.Error(flowSendNotification, "publish to nats failed", err,
+			"subject", u.subject,
+			"email", history.Email,
+			"type", history.Type,
+		)
+		return nil, fmt.Errorf("publish to nats: %w", err)
+	}
+
+	if pubAck == nil {
+		err = errors.New("nil publish ack")
+		logger.Error(flowSendNotification, "publish ack is nil", err,
+			"subject", u.subject,
+			"email", history.Email,
+			"type", history.Type,
+		)
+		return nil, err
+	}
+
+	return pubAck, nil
+}
+
 func toEmailHistoryEntity(req *notifypbv2.NotifyRequest) *entity.EmailHistory {
 	h := &entity.EmailHistory{
 		Email:          req.Email,
@@ -112,19 +147,23 @@ func toEmailHistoryEntity(req *notifypbv2.NotifyRequest) *entity.EmailHistory {
 		Status:         req.Status,
 		Metadata:       req.Metadata,
 	}
+
 	if req.SentAt != nil {
-		t := req.SentAt.AsTime()
+		t := req.SentAt.AsTime().UTC()
 		h.SentAt = &t
 	}
+
 	return h
 }
 
-// toNotifyResponse converts an entity.EmailHistory to a proto NotifyResponse.
 func toNotifyResponse(h *entity.EmailHistory) *notifypbv2.NotifyResponse {
-	sentAt := timestamppb.New(time.Now())
+	var sentAt *timestamppb.Timestamp
 	if h.SentAt != nil {
-		sentAt = timestamppb.New(*h.SentAt)
+		sentAt = timestamppb.New(h.SentAt.UTC())
+	} else {
+		sentAt = timestamppb.New(time.Now().UTC())
 	}
+
 	return &notifypbv2.NotifyResponse{
 		Uuid:           h.IDStr(),
 		Email:          h.Email,
@@ -135,7 +174,15 @@ func toNotifyResponse(h *entity.EmailHistory) *notifypbv2.NotifyResponse {
 		Status:         h.Status,
 		Metadata:       h.Metadata,
 		SentAt:         sentAt,
-		CreatedAt:      timestamppb.New(h.CreatedAt),
-		UpdatedAt:      timestamppb.New(h.UpdatedAt),
+		CreatedAt:      toProtoTimestamp(h.CreatedAt),
+		UpdatedAt:      toProtoTimestamp(h.UpdatedAt),
 	}
 }
+
+func toProtoTimestamp(t time.Time) *timestamppb.Timestamp {
+	if t.IsZero() {
+		return nil
+	}
+	return timestamppb.New(t.UTC())
+}
+```
